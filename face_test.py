@@ -3,6 +3,7 @@ import mediapipe as mp
 import time
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
+from blink import BlinkDetector
 BaseOptions = mp.tasks.BaseOptions
 FaceLandmarker = mp.tasks.vision.FaceLandmarker
 FaceLandmarkerOptions = mp.tasks.vision.FaceLandmarkerOptions
@@ -14,6 +15,8 @@ options = FaceLandmarkerOptions(
 
 landmarker =  FaceLandmarker.create_from_options(options) 
 cap = cv2.VideoCapture(0)
+
+blink_detector = BlinkDetector()
 
 def generate_frames():
     while cap.isOpened():
@@ -27,6 +30,9 @@ def generate_frames():
 
         if result.face_landmarks:
             landmarks = result.face_landmarks[0]
+            
+            blink_count = blink_detector.detect_blink(landmarks)
+            
             h, w, _ = frame.shape
             xs = [int(lm.x * w) for lm in landmarks]
             ys = [int(lm.y * h) for lm in landmarks]

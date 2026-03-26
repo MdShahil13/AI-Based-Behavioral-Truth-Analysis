@@ -1,5 +1,5 @@
-from flask import Flask, Response, render_template
-from face_test import generate_frames
+from flask import Flask, Response, render_template, jsonify
+from face_test import generate_frames, blink_detector
 
 app = Flask(__name__)
 
@@ -11,6 +11,10 @@ def index():
 def video():
     return Response(generate_frames(),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
+
+@app.route('/blink_count')
+def get_blink_count():
+    return jsonify({"count": blink_detector.blink_count})
 
 if __name__ == "__main__":
     

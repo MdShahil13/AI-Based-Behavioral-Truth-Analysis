@@ -23,9 +23,23 @@
                 </div>
                 <div class="controls">
                     <p>Monitoring active facial landmarks and behavioral patterns...</p>
+                    <div id="blink-counter">Blink Count: <span id="count">0</span></div>
                 </div>
             </div>
         </main>
     </div>
+    <script>
+        function updateBlinkCount() {
+            fetch('/blink_count')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('count').textContent = data.count;
+                })
+                .catch(error => console.error('Error fetching blink count:', error));
+        }
+        
+        setInterval(updateBlinkCount, 1000);
+        updateBlinkCount(); // Initial load
+    </script>
 </body>
 </html>
