@@ -16,8 +16,10 @@ options = FaceLandmarkerOptions(
 landmarker =  FaceLandmarker.create_from_options(options) 
 
 blink_detector = BlinkDetector()
+shared_data = {"blink_count": 0}
 
 def generate_frames():
+    global shared_data
     cap = cv2.VideoCapture(0)
     try:
         while cap.isOpened():
@@ -33,6 +35,7 @@ def generate_frames():
                 landmarks = result.face_landmarks[0]
                 
                 blink_count = blink_detector.detect_blink(landmarks)
+                shared_data["blink_count"] = blink_count
                 
                 h, w, _ = frame.shape
                 xs = [int(lm.x * w) for lm in landmarks]
