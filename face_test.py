@@ -40,6 +40,11 @@ with FaceLandmarker.create_from_options(options) as landmarker:
             face_crop = frame[y1:y2, x1:x2]
             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
 
+            # Draw dots on full face
+            for lm in landmarks:
+                x, y = int(lm.x * w), int(lm.y * h)
+                cv2.circle(frame, (x, y), 1, (0, 255, 0), -1)
+
             if face_crop.size > 0:
                 cv2.imshow("Crop (off-camera focus)", face_crop)
         else:
