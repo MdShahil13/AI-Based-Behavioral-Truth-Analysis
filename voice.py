@@ -83,13 +83,13 @@ def analyze_voice(audio, fs):
 def calculate_score(pitch, energy, tempo):
     score = 0
 
-    if pitch > 230:  # Stress ke liye pitch threshold badha di gayi hai
+    if pitch > 185:  # Realistic high pitch threshold
         score += 1
 
-    if energy > 0.08:  # Sirf tab jab awaaz bahut loud ho
+    if energy > 0.02:  # Moderate loudness check
         score += 1
 
-    if 0 < tempo < 65:  # Jab bolne ki raftaar bahut dheemi ho
+    if 0 < tempo < 75:  # Slightly slow speaking
         score += 1
 
     return score

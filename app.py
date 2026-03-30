@@ -21,16 +21,34 @@ def blink_count():
 @app.route('/voice_analysis')
 def voice_analysis():
     try:
+        # 1. Recording se pehle ke blinks
+        start_blinks = shared_data.get("blink_count", 0)
+        
         audio, fs = record_audio()
 
         if audio is None:
             return jsonify({'error': 'Microphone not working'}), 500
 
-        pitch, energy, tempo = analyze_voice(audio, fs)
-        score = calculate_score(pitch, energy, tempo)
-        result = classify_result(score)
+        # 2. Recording ke baad ke blinks
+        end_blinks = shared_data.get("blink_count", 0)
+        blinks_during_speech = end_blinks - start_blinks
 
-        # Ensure tempo is scalar for JSON rounding
+        # 3. Voice Analysis
+        pitch, energy, tempo = analyze_voice(audio, fs)
+        voice_score = calculate_score(pitch, energy, tempo)
+        
+        # 4. Facial Result (Stream se current status)
+        face_result = shared_data.get("facial_prediction", "Truth")
+
+        # 5. Combined Logic (Final Verdict)
+        final_score = voice_score
+        if face_result == "Lie":
+            final_score += 2
+        if blinks_during_speech > 5: # Agar 3 sec mein 5+ baar blink kiya toh stress
+            final_score += 1
+            
+        final_result = "POSSIBLE LIE" if final_score >= 2 else "LIKELY TRUTH"
+
         if isinstance(tempo, (np.ndarray, list, tuple)):
             tempo = float(np.mean(tempo))
         else:
@@ -40,8 +58,10 @@ def voice_analysis():
             'pitch': float(round(pitch, 2)),
             'energy': float(round(energy, 4)),
             'tempo': float(round(tempo, 2)),
-            'score': float(score),
-            'result': str(result),
+            'voice_score': float(voice_score),
+            'face_prediction': face_result,
+            'blinks_during_speech': blinks_during_speech,
+            'result': final_result,
         }), 200
 
     except Exception as e:

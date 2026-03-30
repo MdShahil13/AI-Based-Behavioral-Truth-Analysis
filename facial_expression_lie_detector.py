@@ -15,12 +15,26 @@ def predict_lie_from_facial_expression(landmarks):
     # Example: If eyebrow raise and mouth corner pull detected, predict 'Lie'
     # This is a stub for demonstration purposes
     # Improved dummy logic: Use both high and low y values, and randomize a bit for demo
-    if not landmarks or len(landmarks) < 10:
+    if not landmarks or len(landmarks) < 400:
         return 'Truth'  # Not enough data, assume truth
 
-    # Purana logic screen position par base tha, jo galat tha.
-    # Abhi ke liye hum 'Truth' return karenge jab tak real ML model load nahi hota.
-    # Isse "always lie" ki problem solve ho jayegi.
+    try:
+        # MediaPipe indices: 159 (Left Eye Top), 52 (Left Eyebrow), 386 (Right Eye Top), 282 (Right Eyebrow)
+        # Landmarks are (x, y), where y is normalized 0 to 1
+        l_eye_y = landmarks[159][1]
+        l_brow_y = landmarks[52][1]
+        r_eye_y = landmarks[386][1]
+        r_brow_y = landmarks[282][1]
+
+        # Calculate relative distance between eye and eyebrow
+        avg_dist = ((l_eye_y - l_brow_y) + (r_eye_y - r_brow_y)) / 2
+
+        # Agar eyebrows 0.05 unit se zyada uthi hain, toh stress/lie indicate hota hai
+        if avg_dist > 0.055:
+            return 'Lie'
+    except Exception:
+        return 'Truth'
+
     return 'Truth'
 
 # Example usage (to be replaced with actual facial landmark extraction)

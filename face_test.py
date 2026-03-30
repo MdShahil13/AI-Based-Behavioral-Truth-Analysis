@@ -16,7 +16,7 @@ options = FaceLandmarkerOptions(
 
 landmarker =  FaceLandmarker.create_from_options(options) 
 
-shared_data = {"blink_count": 0}
+shared_data = {"blink_count": 0, "facial_prediction": "Truth"}
 
 def generate_frames():
     global shared_data
@@ -42,6 +42,7 @@ def generate_frames():
                 # Convert MediaPipe landmarks to (x, y) tuples for lie detection
                 landmark_points = [(lm.x, lm.y) for lm in landmarks]
                 prediction = predict_lie_from_facial_expression(landmark_points)
+                shared_data["facial_prediction"] = prediction
                 
                 h, w, _ = frame.shape
                 xs = [int(lm.x * w) for lm in landmarks]
