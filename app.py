@@ -38,11 +38,11 @@ def voice_analysis():
         voice_score = calculate_score(pitch, energy, tempo)
         
         # 4. Facial Result (Stream se current status)
-        face_result = shared_data.get("facial_prediction", "Truth")
+        face_result = shared_data.get("facial_prediction", "Natural")
 
         # 5. Combined Logic (Final Verdict)
         final_score = voice_score
-        if face_result == "Lie":
+        if face_result == "Tense":
             final_score += 2
         if blinks_during_speech > 5: # Agar 3 sec mein 5+ baar blink kiya toh stress
             final_score += 1

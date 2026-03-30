@@ -3,7 +3,7 @@
 This module analyzes facial expressions to predict if a person is lying or not.
 """
 
-def predict_lie_from_facial_expression(landmarks):
+def predict_tension_from_facial_expression(landmarks):
     """
     Predicts if a person is lying based on facial landmarks.
     Args:
@@ -29,17 +29,17 @@ def predict_lie_from_facial_expression(landmarks):
         # Calculate relative distance between eye and eyebrow
         avg_dist = ((l_eye_y - l_brow_y) + (r_eye_y - r_brow_y)) / 2
 
-        # Agar eyebrows 0.05 unit se zyada uthi hain, toh stress/lie indicate hota hai
+        # Agar eyebrows 0.055 unit se zyada uthi hain, toh yeh tension (stress) dikhata hai
         if avg_dist > 0.055:
-            return 'Lie'
+            return 'Tense'
     except Exception:
-        return 'Truth'
+        return 'Natural'
 
-    return 'Truth'
+    return 'Natural'
 
 # Example usage (to be replaced with actual facial landmark extraction)
 if __name__ == "__main__":
     # Dummy landmarks: list of (x, y) tuples
     sample_landmarks = [(0.1, 0.2), (0.3, 0.7), (0.4, 0.8), (0.5, 0.9), (0.2, 0.65), (0.6, 0.7), (0.7, 0.8)]
-    result = predict_lie_from_facial_expression(sample_landmarks)
+    result = predict_tension_from_facial_expression(sample_landmarks)
     print(f"Prediction: {result}")

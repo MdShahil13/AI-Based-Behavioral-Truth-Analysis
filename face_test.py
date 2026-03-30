@@ -4,25 +4,26 @@ import time
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 from blink import BlinkDetector
-from facial_expression_lie_detector import predict_lie_from_facial_expression
+from facial_expression_lie_detector import predict_tension_from_facial_expression
 BaseOptions = mp.tasks.BaseOptions
 FaceLandmarker = mp.tasks.vision.FaceLandmarker
 FaceLandmarkerOptions = mp.tasks.vision.FaceLandmarkerOptions
 VisionRunningMode = mp.tasks.vision.RunningMode
 
-options = FaceLandmarkerOptions(
-    base_options=BaseOptions(model_asset_path='face_landmarker.task'),
-    running_mode=VisionRunningMode.VIDEO)
 
-landmarker =  FaceLandmarker.create_from_options(options) 
 
-shared_data = {"blink_count": 0, "facial_prediction": "Truth"}
+shared_data = {"blink_count": 0, "facial_prediction": "Natural"}
 
 def generate_frames():
     global shared_data
     shared_data["blink_count"] = 0
     blink_detector = BlinkDetector()
     cap = cv2.VideoCapture(0)
+    # Move model loading here for faster camera startup
+    options = FaceLandmarkerOptions(
+        base_options=BaseOptions(model_asset_path='face_landmarker.task'),
+        running_mode=VisionRunningMode.VIDEO)
+    landmarker = FaceLandmarker.create_from_options(options)
     try:
         while cap.isOpened():
             timestamp_ms = int(time.time() * 1000)
@@ -41,8 +42,9 @@ def generate_frames():
 
                 # Convert MediaPipe landmarks to (x, y) tuples for lie detection
                 landmark_points = [(lm.x, lm.y) for lm in landmarks]
-                prediction = predict_lie_from_facial_expression(landmark_points)
+                prediction = predict_tension_from_facial_expression(landmark_points)
                 shared_data["facial_prediction"] = prediction
+                
                 
                 h, w, _ = frame.shape
                 xs = [int(lm.x * w) for lm in landmarks]
@@ -62,8 +64,8 @@ def generate_frames():
                 cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
 
                 # Display Lie/Truth prediction text only
-                text = f'Prediction: {prediction}'
-                cv2.putText(frame, text, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255) if prediction == 'Lie' else (0, 255, 0), 2)
+                text = f'Status: {prediction}'
+                cv2.putText(frame, text, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255) if prediction == 'Tense' else (0, 255, 0), 2)
 
             ret, buffer = cv2.imencode('.jpg', frame)
             frame_bytes = buffer.tobytes()
