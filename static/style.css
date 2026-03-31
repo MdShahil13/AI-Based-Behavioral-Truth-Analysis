@@ -269,11 +269,7 @@ img, .placeholder-box {
     font-weight: 700;
     font-size: 1.1rem;
 }
-    top: 0;
-    z-index: 2;
-    animation: scan 3s linear infinite;
-}
-
+  
 @keyframes scan {
     0% { top: 0; }
     100% { top: 100%; }

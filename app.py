@@ -1,16 +1,73 @@
 import numpy as np
-from flask import Flask, Response, render_template, jsonify
+from flask import Flask, Response, render_template, jsonify, request, redirect, url_for, session
 from face_test import generate_frames, shared_data
 # Import the new functions from your updated voice.py
 from voice import record_audio, analyze_voice, calculate_lie_probability, classify_voice_result
 
 app = Flask(__name__)
+app.secret_key = 'your_secret_key_here'  # Change this to a secure random key
 
 # Global storage for the "Normal" voice stats
 voice_baseline = None 
+users_db = {"admin": "admin"} # Simple in-memory storage for operators
 
+
+# Login required decorator
+def login_required(f):
+    from functools import wraps
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get('logged_in'):
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+
+# Home page is public
 @app.route('/')
-def index():
+def home():
+    return render_template('home.html')
+
+# Login page
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    error = None
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        # Simple check, replace with real user validation
+        if username in users_db and users_db[username] == password:
+            session['logged_in'] = True
+            return redirect(url_for('app_main'))
+        else:
+            error = 'Invalid Credentials. Please try again.'
+    return render_template('login.html', error=error)
+
+# Signup page
+@app.route('/signup', methods=['GET', 'POST'])
+def signup():
+    error = None
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        if username in users_db:
+            error = 'Operator ID already exists.'
+        else:
+            users_db[username] = password
+            session['logged_in'] = True
+            return redirect(url_for('app_main'))
+    return render_template('signup.html', error=error)
+
+# Logout
+@app.route('/logout')
+def logout():
+    session.pop('logged_in', None)
+    return redirect(url_for('home'))
+
+# Main app page (protected)
+@app.route('/app')
+@login_required
+def app_main():
     return render_template('index.html')
 
 @app.route('/video')
