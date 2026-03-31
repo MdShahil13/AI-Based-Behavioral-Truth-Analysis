@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lie Detector</title>
+    <title>AI Behavioral Analysis - Pro</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
     <div class="main-container">
         <header>
-            <div class="logo">Lie Detector</div>
+            <div class="logo">AI<span>Behavioral</span>Analysis</div>
             <div id="statusBadge" class="status-badge" style="display: none;">
                 <span class="dot"></span> LIVE SYSTEM
             </div>
@@ -23,183 +23,165 @@
                         <div id="loader" class="loader" style="display: none;"></div>
                         <span id="placeholderText">Step 1: Calibrate Voice to Begin</span>
                     </div>
-                    <img id="videoFeed" src="" alt="Video Stream" style="display: none;">
+                    <!-- DEPLOYMENT READY: Use Video tag instead of Img tag -->
+                    <video id="webcam" autoplay playsinline style="width: 100%; height: auto; display: none; border-radius: 8px; transform: scaleX(-1);"></video>
+                    <canvas id="output_canvas" style="display: none;"></canvas>
                 </div>
 
                 <div class="controls">
                     <div class="btn-group">
-                        <!-- Step 1: Calibration -->
-                        <button id="calibrateBtn" class="btn-start" onclick="startCalibration()" style="background-color: #2196F3;">1. Calibrate (Speak Normally)</button>
-                        
-                        <!-- Step 2: 1-Minute Session -->
+                        <button id="calibrateBtn" class="btn-start" onclick="startCalibration()" style="background-color: #2196F3;">1. Calibrate Voice</button>
                         <button id="startBtn" class="btn-start" onclick="startOneMinuteSession()" style="display: none; background-color: #4CAF50;">2. Start 1-Min Interrogation</button>
-                        
-                        <button id="stopBtn" class="btn-stop" onclick="stopCamera(false)" style="display: none;">Cancel Session</button>
-                        <button id="resetBtn" class="btn-start" onclick="location.reload()" style="display: none; background-color: #f44336;">Fresh Restart</button>
+                        <button id="stopBtn" class="btn-stop" onclick="stopCamera(false)" style="display: none; background-color: #f44336;">Cancel Session</button>
+                        <button id="resetBtn" class="btn-start" onclick="location.reload()" style="display: none; background-color: #757575;">Fresh Restart</button>
                     </div>
                     
                     <div class="telemetry-grid">
-                        <div class="data-card">
-                            <span class="data-label">Blinks</span>
-                            <span id="count" class="data-value">0</span>
-                        </div>
-                        <div class="data-card">
-                            <span class="data-label">Current Status</span>
-                            <span id="voiceResult" class="data-value">Waiting...</span>
-                        </div>
-                        <div class="data-card">
-                            <span class="data-label">Timer</span>
-                            <span id="statusText" class="data-value" style="color: #ffeb3b;">READY</span>
-                        </div>
+                        <div class="data-card"><span class="data-label">Blinks</span><span id="count" class="data-value">0</span></div>
+                        <div class="data-card"><span class="data-label">Voice Status</span><span id="voiceResult" class="data-value">Waiting...</span></div>
+                        <div class="data-card"><span class="data-label">Timer</span><span id="statusText" class="data-value" style="color: #ffeb3b;">READY</span></div>
                     </div>
                     
                     <div id="finalResults" class="final-results" style="display: none; background: #1a1a1a; padding: 20px; border-radius: 10px; border: 1px solid #4CAF50; margin-top: 20px;">
                         <h3 style="color: #4CAF50; margin-top: 0;">Full Session Overview</h3>
-                        <div class="result-item">
-                            <span class="result-label">Overall Verdict:</span>
-                            <span id="finalVoiceResult" class="result-value" style="font-weight: bold; font-size: 1.2rem;"></span>
-                        </div>
-                        <div class="result-item">
-                            <span class="result-label">Average Stress:</span>
-                            <span id="voiceScore" class="result-value"></span>
-                        </div>
-                        <div class="result-item">
-                            <span class="result-label">Total Blink Rate:</span>
-                            <span id="finalBlinkCount" class="result-value"></span>
-                        </div>
+                        <div class="result-item"><span class="result-label">Verdict:</span><span id="finalVoiceResult" class="result-value"></span></div>
+                        <div class="result-item"><span class="result-label">Average Stress:</span><span id="voiceScore" class="result-value"></span></div>
+                        <div class="result-item"><span class="result-label">Total Blink Rate:</span><span id="finalBlinkCount" class="result-value"></span></div>
                     </div>
                 </div>
             </div>
         </main>
     </div>
-  <script>
-    let updateInterval = null;
-    let isAnalysisActive = false;
 
-    // --- STEP 1: CALIBRATION ---
-    function startCalibration() {
-        const statusText = document.getElementById('statusText');
-        const calibrateBtn = document.getElementById('calibrateBtn');
-        const startBtn = document.getElementById('startBtn');
+    <script>
+        const video = document.getElementById('webcam');
+        const canvas = document.getElementById('output_canvas');
+        const ctx = canvas.getContext('2d');
+        let isAnalysisActive = false;
+        let frameInterval = null;
+        let blinkInterval = null;
 
-        statusText.innerText = "CALIBRATING...";
-        calibrateBtn.disabled = true;
-        
-        fetch('/calibrate_voice')
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'Voice Calibrated') {
-                    statusText.innerText = "CALIBRATED";
-                    calibrateBtn.style.display = "none";
-                    startBtn.style.display = "inline-block";
-                    alert("System Ready. Click Start for the 1-minute session.");
-                }
-            }).catch(err => alert("Calibration Error"));
-    }
+        // --- STEP 1: CALIBRATION ---
+        function startCalibration() {
+            const statusText = document.getElementById('statusText');
+            statusText.innerText = "CALIBRATING...";
+            fetch('/calibrate_voice')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'Voice Calibrated') {
+                        statusText.innerText = "READY";
+                        document.getElementById('calibrateBtn').style.display = "none";
+                        document.getElementById('startBtn').style.display = "inline-block";
+                    }
+                }).catch(() => alert("Mic Calibration Error"));
+        }
 
-    // --- STEP 2: START 1-MINUTE SESSION ---
-    function startOneMinuteSession() {
-        // Start the camera and background recording
-        startCamera(); 
-        fetch('/start_session'); 
-        
-        let timeLeft = 60;
-        const timerDisplay = document.getElementById('statusText');
-        const stopBtn = document.getElementById('stopBtn');
-        
-        const countdown = setInterval(() => {
-            timeLeft--;
-            timerDisplay.innerText = `SESSION ACTIVE: ${timeLeft}s`;
-            
-            if (timeLeft <= 0 || !isAnalysisActive) {
-                clearInterval(countdown);
-                if (isAnalysisActive) stopCamera(true); // stop and show report
+        // --- STEP 2: SESSION LOGIC ---
+        async function startOneMinuteSession() {
+            try {
+                // Request Browser Permissions
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                video.srcObject = stream;
+                video.style.display = "block";
+                document.getElementById('placeholder').style.display = "none";
+                document.getElementById('scanLine').style.display = "block";
+                document.getElementById('statusBadge').style.display = "flex";
+                
+                // UI Management
+                document.getElementById('startBtn').style.display = "none";
+                document.getElementById('stopBtn').style.display = "inline-block";
+                
+                isAnalysisActive = true;
+                fetch('/start_session');
+
+                // Timer Management
+                let timeLeft = 60;
+                const timerInt = setInterval(() => {
+                    timeLeft--;
+                    document.getElementById('statusText').innerText = `SESSION: ${timeLeft}s`;
+                    if(timeLeft <= 0 || !isAnalysisActive) {
+                        clearInterval(timerInt);
+                        if(isAnalysisActive) stopCamera(true);
+                    }
+                }, 1000);
+
+                // Start Background Processing
+                frameInterval = setInterval(sendFrameToServer, 200); // 5 FPS for AI processing
+                blinkInterval = setInterval(updateBlinkCount, 1000); // UI Refresh
+                triggerVoiceInterrogation();
+
+            } catch (err) {
+                alert("Permission Denied: Deployed sites require Camera/Mic access.");
             }
-        }, 1000);
-    }
+        }
 
-    function startCamera() {
-        const videoImg = document.getElementById('videoFeed');
-        const statusBadge = document.getElementById('statusBadge');
-        const stopBtn = document.getElementById('stopBtn');
-        const startBtn = document.getElementById('startBtn');
+        function sendFrameToServer() {
+            if (!isAnalysisActive) return;
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0);
+            const imageData = canvas.toDataURL('image/jpeg', 0.5);
 
-        videoImg.onload = () => {
-            document.getElementById('placeholder').style.display = "none";
-            videoImg.style.display = "block";
-            document.getElementById('scanLine').style.display = "block";
-            updateInterval = setInterval(updateBlinkCount, 1000);
-        };
-        
-        videoImg.src = "{{ url_for('video') }}";
-        statusBadge.style.display = "flex";
-        startBtn.style.display = "none";
-        stopBtn.style.display = "inline-block";
-        isAnalysisActive = true;
-        
-        // Start recurring voice checks during the minute
-        triggerVoiceInterrogation();
-    }
+            fetch('/process_frame', {
+                method: 'POST',
+                body: JSON.stringify({ image: imageData }),
+                headers: { 'Content-Type': 'application/json' }
+            }).catch(err => console.error("Frame processing error"));
+        }
 
-    function triggerVoiceInterrogation() {
-        if (!isAnalysisActive) return;
-        fetch('/voice_analysis')
-            .then(res => res.json())
-            .then(data => {
-                document.getElementById('voiceResult').innerText = data.result;
-                if (isAnalysisActive) setTimeout(triggerVoiceInterrogation, 3000);
-            });
-    }
+        function updateBlinkCount() {
+            if (!isAnalysisActive) return;
+            fetch('/blink_count')
+                .then(res => res.json())
+                .then(data => { document.getElementById('count').textContent = data.count; });
+        }
 
-    // --- STEP 3: FINAL REPORT ---
-        // --- STEP 3: FINAL REPORT (Updated for 33.33% Model) ---
-    function showFinalReport() {
-        fetch('/get_session_report') 
-            .then(res => res.json())
-            .then(data => {
-                // Show the hidden results box
-                document.getElementById('finalResults').style.display = "block";
-                
-                // 1. Set the Verdict and Probability Percentage
-                document.getElementById('finalVoiceResult').innerText = data.verdict + " (" + data.lie_probability + ")";
-                
-                // 2. Combine Voice and Face stats into the 'Average Stress' line
-                document.getElementById('voiceScore').innerText = "Voice Stress: " + data.voice_stress + " | Facial Tension: " + data.face_tension;
-                
-                // 3. Set the Blink Rate
-                document.getElementById('finalBlinkCount').innerText = data.blink_rate;
-                
-                // Color coding the verdict text
-                const verdictEl = document.getElementById('finalVoiceResult');
-                if (data.verdict.includes("TRUTHFUL")) {
-                    verdictEl.style.color = "#4CAF50"; // Green
-                } else if (data.verdict.includes("DECEPTIVE")) {
-                    verdictEl.style.color = "#f44336"; // Red
-                } else {
-                    verdictEl.style.color = "#ffeb3b"; // Yellow
-                }
-                
-                alert("Session Analysis Complete!\nVerdict: " + data.verdict);
-            })
-            .catch(err => console.error("Error fetching report:", err));
-    }
+        function triggerVoiceInterrogation() {
+            if (!isAnalysisActive) return;
+            fetch('/voice_analysis')
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('voiceResult').innerText = data.result;
+                    if (isAnalysisActive) setTimeout(triggerVoiceInterrogation, 3000);
+                });
+        }
 
-    function updateBlinkCount() {
-        fetch('/blink_count').then(res => res.json()).then(data => {
-            document.getElementById('count').textContent = data.count;
-        });
-    }
+        // --- STEP 3: FINAL REPORT ---
+        function showFinalReport() {
+            fetch('/get_session_report')
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('finalResults').style.display = "block";
+                    const verdictEl = document.getElementById('finalVoiceResult');
+                    verdictEl.innerText = data.verdict + " (" + data.lie_probability + ")";
+                    
+                    // Style by verdict
+                    if (data.verdict.includes("TRUTHFUL")) verdictEl.style.color = "#4CAF50";
+                    else if (data.verdict.includes("DECEPTIVE")) verdictEl.style.color = "#f44336";
+                    
+                    document.getElementById('voiceScore').innerText = `Voice Stress: ${data.voice_stress} | Face Tension: ${data.face_tension}`;
+                    document.getElementById('finalBlinkCount').innerText = data.blink_rate;
+                });
+        }
 
-    function stopCamera(showReport = false) {
-        isAnalysisActive = false;
-        clearInterval(updateInterval);
-        document.getElementById('videoFeed').style.display = "none";
-        document.getElementById('placeholder').style.display = "block";
-        document.getElementById('stopBtn').style.display = "none";
-        document.getElementById('resetBtn').style.display = "inline-block";
-        
-        if (showReport) showFinalReport();
-    }
-</script>
+        function stopCamera(showReport) {
+            isAnalysisActive = false;
+            clearInterval(frameInterval);
+            clearInterval(blinkInterval);
+            
+            if (video.srcObject) {
+                video.srcObject.getTracks().forEach(track => track.stop());
+            }
+            
+            video.style.display = "none";
+            document.getElementById('placeholder').style.display = "block";
+            document.getElementById('statusBadge').style.display = "none";
+            document.getElementById('stopBtn').style.display = "none";
+            document.getElementById('resetBtn').style.display = "inline-block";
+            
+            if (showReport) showFinalReport();
+            else document.getElementById('statusText').innerText = "CANCELLED";
+        }
+    </script>
 </body>
 </html>

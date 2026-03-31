@@ -1,7 +1,9 @@
-opencv-python
-mediapipe
 flask
-sounddevice
-librosa
+opencv-python-headless
+mediapipe
 numpy
 scipy
+librosa
+pymongo
+bcrypt
+gunicorn
