@@ -57,7 +57,7 @@ from models.db import users_collection
 
 @app.route('/app')
 @login_required
-def app_main():
+def index():
     # Find username from session['user'] (which is email)
     user_doc = users_collection.find_one({"email": session.get('user')})
     g.username = user_doc['username'] if user_doc else 'User'
