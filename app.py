@@ -1,7 +1,7 @@
 import numpy as np
 import time
 from functools import wraps
-from flask import Flask, Response, render_template, jsonify, request, redirect, url_for, session
+from flask import Flask, Response, render_template, jsonify, request, redirect, url_for, session, g
 from face_test import generate_frames, shared_data
 from voice import record_audio, analyze_voice, calculate_lie_probability, classify_voice_result
 from result import calculate_final_verdict
@@ -44,9 +44,15 @@ def home():
     return render_template('home.html')
 
 
+
+from db import users_collection
+
 @app.route('/app')
 @login_required
 def app_main():
+    # Find username from session['user'] (which is email)
+    user_doc = users_collection.find_one({"email": session.get('user')})
+    g.username = user_doc['username'] if user_doc else 'User'
     return render_template('index.html')
 
 
