@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Face Detection UI</title>
+    <title>AI Behavioral Analysis - 1 Min Session</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
@@ -21,189 +21,185 @@
                     <div id="scanLine" class="scan-line" style="display: none;"></div>
                     <div id="placeholder" class="placeholder-box">
                         <div id="loader" class="loader" style="display: none;"></div>
-                        <span id="placeholderText">System Standby - Ready to start</span>
+                        <span id="placeholderText">Step 1: Calibrate Voice to Begin</span>
                     </div>
                     <img id="videoFeed" src="" alt="Video Stream" style="display: none;">
                 </div>
+
                 <div class="controls">
                     <div class="btn-group">
-    <!-- Step 1: Calibration -->
-    <button id="calibrateBtn" class="btn-start" onclick="startCalibration()" style="background-color: #2196F3;">1. Calibrate (Speak Normally)</button>
-    
-    <!-- Step 2: Analysis (Hidden until Calibrated) -->
-    <button id="startBtn" class="btn-start" onclick="startCamera()" style="display: none; background-color: #4CAF50;">2. Start Interrogation</button>
-    
-    <button id="stopBtn" class="btn-stop" onclick="stopCamera()" style="display: none;">Stop Analysis</button>
-    <button id="resetBtn" class="btn-start" onclick="location.reload()" style="display: none; background-color: #f44336;">Fresh Restart</button>
-</div>
+                        <!-- Step 1: Calibration -->
+                        <button id="calibrateBtn" class="btn-start" onclick="startCalibration()" style="background-color: #2196F3;">1. Calibrate (Speak Normally)</button>
+                        
+                        <!-- Step 2: 1-Minute Session -->
+                        <button id="startBtn" class="btn-start" onclick="startOneMinuteSession()" style="display: none; background-color: #4CAF50;">2. Start 1-Min Interrogation</button>
+                        
+                        <button id="stopBtn" class="btn-stop" onclick="stopCamera(false)" style="display: none;">Cancel Session</button>
+                        <button id="resetBtn" class="btn-start" onclick="location.reload()" style="display: none; background-color: #f44336;">Fresh Restart</button>
+                    </div>
                     
                     <div class="telemetry-grid">
                         <div class="data-card">
-                            <span class="data-label">Blink Count</span>
+                            <span class="data-label">Blinks</span>
                             <span id="count" class="data-value">0</span>
                         </div>
                         <div class="data-card">
-                            <span class="data-label">Voice Result</span>
-                            <span id="voiceResult" class="data-value">Not Analyzed</span>
+                            <span class="data-label">Current Status</span>
+                            <span id="voiceResult" class="data-value">Waiting...</span>
                         </div>
                         <div class="data-card">
-                            <span class="data-label">System</span>
-                            <span id="statusText" class="data-value" style="font-size: 0.8rem;">READY</span>
+                            <span class="data-label">Timer</span>
+                            <span id="statusText" class="data-value" style="color: #ffeb3b;">READY</span>
                         </div>
                     </div>
                     
-                    <div id="voiceDetails" class="voice-details" style="display: none;">
-                        <div class="detail-item">
-                            <span class="detail-label">Pitch:</span>
-                            <span id="voicePitch" class="detail-value"></span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Energy:</span>
-                            <span id="voiceEnergy" class="detail-value"></span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Tempo:</span>
-                            <span id="voiceTempo" class="detail-value"></span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">Score:</span>
-                            <span id="voiceScore" class="detail-value"></span>
-                        </div>
-                    </div>
-                    
-                    <div id="finalResults" class="final-results" style="display: none;">
-                        <h3>Analysis Complete</h3>
+                    <div id="finalResults" class="final-results" style="display: none; background: #1a1a1a; padding: 20px; border-radius: 10px; border: 1px solid #4CAF50; margin-top: 20px;">
+                        <h3 style="color: #4CAF50; margin-top: 0;">Full Session Overview</h3>
                         <div class="result-item">
-                            <span class="result-label">Final Blink Count:</span>
+                            <span class="result-label">Overall Verdict:</span>
+                            <span id="finalVoiceResult" class="result-value" style="font-weight: bold; font-size: 1.2rem;"></span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label">Average Stress:</span>
+                            <span id="voiceScore" class="result-value"></span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label">Total Blink Rate:</span>
                             <span id="finalBlinkCount" class="result-value"></span>
-                        </div>
-                        <div class="result-item">
-                            <span class="result-label">Voice Analysis Result:</span>
-                            <span id="finalVoiceResult" class="result-value"></span>
                         </div>
                     </div>
                 </div>
             </div>
         </main>
     </div>
-   <script>
-        let updateInterval = null;
-        let isAnalysisActive = false;
-        let latestVoiceData = null;
+  <script>
+    let updateInterval = null;
+    let isAnalysisActive = false;
 
-        // --- STEP 1: CALIBRATION ---
-        function startCalibration() {
-            const statusText = document.getElementById('statusText');
-            const calibrateBtn = document.getElementById('calibrateBtn');
-            const startBtn = document.getElementById('startBtn');
+    // --- STEP 1: CALIBRATION ---
+    function startCalibration() {
+        const statusText = document.getElementById('statusText');
+        const calibrateBtn = document.getElementById('calibrateBtn');
+        const startBtn = document.getElementById('startBtn');
 
-            statusText.innerText = "CALIBRATING VOICE...";
-            calibrateBtn.disabled = true;
-            calibrateBtn.innerText = "Recording Baseline (3s)...";
-
-            // Calls the calibration route in app.py
-            fetch('/calibrate_voice')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'Voice Calibrated') {
-                        statusText.innerText = "CALIBRATED";
-                        calibrateBtn.style.display = "none";
-                        startBtn.style.display = "inline-block"; // Show the real analysis button
-                        alert("Voice Profile Saved! Now click 'Start Interrogation'.");
-                    } else {
-                        alert("Calibration failed. Check Microphone.");
-                        calibrateBtn.disabled = false;
-                        calibrateBtn.innerText = "Retry Calibration";
-                    }
-                })
-                .catch(err => {
-                    console.error(err);
-                    statusText.innerText = "MIC ERROR";
-                });
-        }
-
-        // --- STEP 2: VIDEO ANALYSIS ---
-        function startCamera() {
-            const videoImg = document.getElementById('videoFeed');
-            const placeholderText = document.getElementById('placeholderText');
-            const loader = document.getElementById('loader');
-            const statusBadge = document.getElementById('statusBadge');
-            const startBtn = document.getElementById('startBtn');
-            const stopBtn = document.getElementById('stopBtn');
-            const statusText = document.getElementById('statusText');
-            const scanLine = document.getElementById('scanLine');
-
-            placeholderText.innerText = "Initializing Camera...";
-            loader.style.display = "block";
-            
-            videoImg.onload = () => {
-                document.getElementById('placeholder').style.display = "none";
-                videoImg.style.display = "block";
-                scanLine.style.display = "block";
-                if (!updateInterval) {
-                    updateInterval = setInterval(updateBlinkCount, 1000);
+        statusText.innerText = "CALIBRATING...";
+        calibrateBtn.disabled = true;
+        
+        fetch('/calibrate_voice')
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'Voice Calibrated') {
+                    statusText.innerText = "CALIBRATED";
+                    calibrateBtn.style.display = "none";
+                    startBtn.style.display = "inline-block";
+                    alert("System Ready. Click Start for the 1-minute session.");
                 }
-            };
+            }).catch(err => alert("Calibration Error"));
+    }
+
+    // --- STEP 2: START 1-MINUTE SESSION ---
+    function startOneMinuteSession() {
+        // Start the camera and background recording
+        startCamera(); 
+        fetch('/start_session'); 
+        
+        let timeLeft = 60;
+        const timerDisplay = document.getElementById('statusText');
+        const stopBtn = document.getElementById('stopBtn');
+        
+        const countdown = setInterval(() => {
+            timeLeft--;
+            timerDisplay.innerText = `SESSION ACTIVE: ${timeLeft}s`;
             
-            videoImg.src = "{{ url_for('video') }}";
-            statusBadge.style.display = "flex";
-            startBtn.style.display = "none";
-            stopBtn.style.display = "inline-block";
-            statusText.innerText = "ANALYZING";
-            
-            isAnalysisActive = true;
-            
-            // Start the infinite voice analysis loop
-            triggerVoiceInterrogation();
-        }
+            if (timeLeft <= 0 || !isAnalysisActive) {
+                clearInterval(countdown);
+                if (isAnalysisActive) stopCamera(true); // stop and show report
+            }
+        }, 1000);
+    }
 
-        // --- STEP 3: VOICE ANALYSIS LOOP ---
-        function triggerVoiceInterrogation() {
-            if (!isAnalysisActive) return;
+    function startCamera() {
+        const videoImg = document.getElementById('videoFeed');
+        const statusBadge = document.getElementById('statusBadge');
+        const stopBtn = document.getElementById('stopBtn');
+        const startBtn = document.getElementById('startBtn');
 
-            const voiceResult = document.getElementById('voiceResult');
-            const voiceDetails = document.getElementById('voiceDetails');
-            voiceResult.innerText = "Listening...";
-            voiceDetails.style.display = "block";
+        videoImg.onload = () => {
+            document.getElementById('placeholder').style.display = "none";
+            videoImg.style.display = "block";
+            document.getElementById('scanLine').style.display = "block";
+            updateInterval = setInterval(updateBlinkCount, 1000);
+        };
+        
+        videoImg.src = "{{ url_for('video') }}";
+        statusBadge.style.display = "flex";
+        startBtn.style.display = "none";
+        stopBtn.style.display = "inline-block";
+        isAnalysisActive = true;
+        
+        // Start recurring voice checks during the minute
+        triggerVoiceInterrogation();
+    }
 
-            fetch('/voice_analysis')
-                .then(response => response.json())
-                .then(data => {
-                    // Update UI with results
-                    document.getElementById('voicePitch').innerText = data.pitch + " Hz";
-                    document.getElementById('voiceEnergy').innerText = data.energy;
-                    document.getElementById('voiceTempo').innerText = data.tempo + " BPM";
-                    document.getElementById('voiceScore').innerText = data.total_score + "% Stress";
-                    document.getElementById('voiceResult').innerText = data.result;
-                    
-                    // Change text color based on result
-                    voiceResult.style.color = (data.result === "POSSIBLE LIE") ? "red" : "#4CAF50";
+    function triggerVoiceInterrogation() {
+        if (!isAnalysisActive) return;
+        fetch('/voice_analysis')
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('voiceResult').innerText = data.result;
+                if (isAnalysisActive) setTimeout(triggerVoiceInterrogation, 3000);
+            });
+    }
 
-                    // Restart analysis after a small delay
-                    if (isAnalysisActive) {
-                        setTimeout(triggerVoiceInterrogation, 1500);
-                    }
-                })
-                .catch(error => {
-                    console.error('Voice Error:', error);
-                    voiceResult.innerText = "Mic Error";
-                });
-        }
+    // --- STEP 3: FINAL REPORT ---
+        // --- STEP 3: FINAL REPORT (Updated for 33.33% Model) ---
+    function showFinalReport() {
+        fetch('/get_session_report') 
+            .then(res => res.json())
+            .then(data => {
+                // Show the hidden results box
+                document.getElementById('finalResults').style.display = "block";
+                
+                // 1. Set the Verdict and Probability Percentage
+                document.getElementById('finalVoiceResult').innerText = data.verdict + " (" + data.lie_probability + ")";
+                
+                // 2. Combine Voice and Face stats into the 'Average Stress' line
+                document.getElementById('voiceScore').innerText = "Voice Stress: " + data.voice_stress + " | Facial Tension: " + data.face_tension;
+                
+                // 3. Set the Blink Rate
+                document.getElementById('finalBlinkCount').innerText = data.blink_rate;
+                
+                // Color coding the verdict text
+                const verdictEl = document.getElementById('finalVoiceResult');
+                if (data.verdict.includes("TRUTHFUL")) {
+                    verdictEl.style.color = "#4CAF50"; // Green
+                } else if (data.verdict.includes("DECEPTIVE")) {
+                    verdictEl.style.color = "#f44336"; // Red
+                } else {
+                    verdictEl.style.color = "#ffeb3b"; // Yellow
+                }
+                
+                alert("Session Analysis Complete!\nVerdict: " + data.verdict);
+            })
+            .catch(err => console.error("Error fetching report:", err));
+    }
 
-        function updateBlinkCount() {
-            fetch('/blink_count')
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('count').textContent = data.count;
-                })
-                .catch(error => console.error('Error fetching blink count:', error));
-        }
+    function updateBlinkCount() {
+        fetch('/blink_count').then(res => res.json()).then(data => {
+            document.getElementById('count').textContent = data.count;
+        });
+    }
 
-        function stopCamera() {
-            isAnalysisActive = false;
-            if (updateInterval) clearInterval(updateInterval);
-            location.reload(); // Reset everything for the next session
-        }
-    </script>
+    function stopCamera(showReport = false) {
+        isAnalysisActive = false;
+        clearInterval(updateInterval);
+        document.getElementById('videoFeed').style.display = "none";
+        document.getElementById('placeholder').style.display = "block";
+        document.getElementById('stopBtn').style.display = "none";
+        document.getElementById('resetBtn').style.display = "inline-block";
+        
+        if (showReport) showFinalReport();
+    }
+</script>
 </body>
 </html>
