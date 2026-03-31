@@ -4,7 +4,7 @@ import base64
 import cv2
 from functools import wraps
 from flask import Flask, Response, render_template, jsonify, request, redirect, url_for, session, g
-from models.face_test import generate_frames, shared_data
+from models.face_test import shared_data
 from models.voice import record_audio, analyze_voice, calculate_lie_probability, classify_voice_result
 from models.result import calculate_final_verdict
 from flask import Flask, Response, render_template, jsonify, request, redirect, url_for, session

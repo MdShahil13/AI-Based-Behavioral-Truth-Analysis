@@ -1,7 +1,7 @@
 from pymongo import MongoClient
 
 # MongoDB connection
-client = MongoClient("mongodb+srv://mdsahilshaikh1506_db_user:<db_password>@cluster0.tjihg5s.mongodb.net/?appName=Cluster0")
+client = MongoClient("mongodb+srv://mdsahilshaikh1506_db_user:@cluster0.tjihg5s.mongodb.net/?appName=Cluster0")
 
 # Database
 db = client["ai_behavior_db"]
