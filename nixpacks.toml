@@ -1,5 +1,13 @@
 [phases.setup]
-nixPkgs = ["python310", "glib", "libGL"]
+nixPkgs = [
+  "python310",
+  "glib",
+  "libGL",
+  "libglib",
+  "libgcc",
+  "libstdc++",
+  "zlib"
+]
 
 [phases.install]
 cmds = ["pip install -r requirements.txt"]
