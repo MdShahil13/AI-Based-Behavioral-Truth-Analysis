@@ -1,11 +1,11 @@
 [phases.setup]
-# System dependencies for OpenCV, MediaPipe, and Librosa
+# System dependencies for OpenCV + MediaPipe + Librosa
 nixPkgs = [
-  "libGL",       # solves libGL.so.1
-  "glib",        # required by MediaPipe
-  "libstdc++",   # C++ standard library for OpenCV binaries
-  "zlib",        # optional, safe to include
-  "ffmpeg"       # required for audio processing in Librosa/Pydub
+  "mesa-libGL",   # correct libGL package
+  "glib",
+  "libstdc++",
+  "zlib",
+  "ffmpeg"        # needed for audio processing (librosa)
 ]
 
 [phases.install]

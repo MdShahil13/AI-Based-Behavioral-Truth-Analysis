@@ -17,6 +17,8 @@ from models.result import calculate_final_verdict
 from models.auth import auth
 from models.db import users_collection
 
+cv2.ocl.setUseOpenCL(False)  # Prevent OpenCL from trying to access GPU
+cv2.setNumThreads(0)
 app = Flask(__name__)
 app.secret_key = 'your_secret_key_here'
 app.register_blueprint(auth)
